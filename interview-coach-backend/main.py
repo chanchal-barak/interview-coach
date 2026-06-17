@@ -1,81 +1,110 @@
-from fastapi import FastAPI, UploadFile, File
-import pdfplumber
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+from services.pdf_extractor import extract_text_from_upload
 from services.resume_analyzer import analyze_resume_text
 from services.job_matcher import match_resume_job
+from services.gemini_service import (
+    analyze_resume_with_ai,
+    analyze_job_match_with_ai,
+    generate_ai_feedback,
+)
 
-app = FastAPI()
+app = FastAPI(
+    title="AI Interview Coach API",
+    description="Backend API for resume analysis, job matching, and AI feedback.",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-def extract_pdf_text(filepath):
-    text = ""
-
-    with pdfplumber.open(filepath) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-
-            if page_text:
-                text += page_text
-
-    return text
-
-
-
 @app.get("/")
-def home():
-    return {"message": "Interview Coach API Running"}
-
-
+def root():
+    return {"status": "AI Interview Coach API is running"}
 
 @app.post("/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
+    """
+    Extracts text from resume PDF and runs heuristic analysis.
+    Fast response, no Gemini call.
+    """
+    text = await extract_text_from_upload(file)
+    result = analyze_resume_text(text)
+    return result
 
-    filepath = f"uploads/{file.filename}"
+@app.post("/generate-feedback")
+async def generate_feedback(file: UploadFile = File(...)):
+    """
+    Sends resume to Gemini for structured AI analysis:
+    - readiness_score (0-100)
+    - section_scores
+    - strengths, weaknesses, missing_skills
+    - recommendations
+    - summary
+    """
+    text = await extract_text_from_upload(file)
 
-    with open(filepath, "wb") as f:
-        f.write(await file.read())
+    try:
+        result = analyze_resume_with_ai(text)
+    except ValueError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
-    text = ""
+    return result
 
-    with pdfplumber.open(filepath) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
+@app.post("/detailed-feedback")
+async def detailed_feedback(file: UploadFile = File(...)):
+    """
+    Deep per-section feedback + bullet point rewrites.
+    More expensive Gemini call — use on demand.
+    """
+    text = await extract_text_from_upload(file)
 
-            if page_text:
-                text += page_text
+    try:
+        result = generate_ai_feedback(text)
+    except ValueError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
-    analysis = analyze_resume_text(text)
-
-    return analysis
+    return result
 
 @app.post("/match-job")
 async def match_job(
     resume: UploadFile = File(...),
     job_description: UploadFile = File(...)
 ):
+    """
+    Keyword-based job matching. Fast and free.
+    Returns match_score, matched skills, missing skills.
+    """
+    resume_text = await extract_text_from_upload(resume)
+    jd_text = await extract_text_from_upload(job_description)
 
-    resume_path = f"uploads/{resume.filename}"
-    jd_path = f"uploads/{job_description.filename}"
+    result = match_resume_job(resume_text, jd_text)
+    return result
 
-    with open(resume_path, "wb") as f:
-        f.write(await resume.read())
+@app.post("/match-job-ai")
+async def match_job_ai(
+    resume: UploadFile = File(...),
+    job_description: UploadFile = File(...)
+):
+    """
+    Gemini-powered job matching with:
+    - Semantic skill matching (not just keywords)
+    - Skill gap analysis paragraph
+    - Role fit summary
+    - Recommendations to close the gap
+    """
+    resume_text = await extract_text_from_upload(resume)
+    jd_text = await extract_text_from_upload(job_description)
 
-    with open(jd_path, "wb") as f:
-        f.write(await job_description.read())
-
-    resume_text = extract_pdf_text(resume_path)
-    jd_text = extract_pdf_text(jd_path)
-
-    result = match_resume_job(
-        resume_text,
-        jd_text
-    )
+    try:
+        result = analyze_job_match_with_ai(resume_text, jd_text)
+    except ValueError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
     return result

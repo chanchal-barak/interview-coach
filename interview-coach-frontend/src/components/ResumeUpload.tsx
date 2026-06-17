@@ -85,6 +85,11 @@ function ResumeUpload() {
     {analysis && (
       <div className="card">
         <h2>Resume Score: {analysis.score}/10</h2>
+        <p>Projects Found: {analysis.projects}</p>
+        <p>
+        GitHub:
+        {analysis.github ? " Yes" : " No"}
+        </p>
 
         <h3>Strengths</h3>
 
@@ -101,6 +106,13 @@ function ResumeUpload() {
             <li key={item}>{item}</li>
           ))}
         </ul>
+        <h3>Recommendations</h3>
+
+            <ul>
+            {analysis.recommendations.map((item: string) => (
+                <li key={item}>{item}</li>
+            ))}
+            </ul>
       </div>
     )}
 
