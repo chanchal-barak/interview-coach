@@ -1,3 +1,4 @@
+import time
 import os
 import json
 import re
@@ -5,22 +6,59 @@ from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
+print("API KEY:", os.getenv("GEMINI_API_KEY"))
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 MODEL = "gemini-2.5-flash"
 
 
-def _call_gemini(prompt: str) -> str:
-    """Raw call to Gemini. Returns response text or raises."""
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt
-    )
-    if not response or not response.text:
-        raise ValueError("Gemini returned an empty response.")
-    return response.text
+from google.genai.errors import ClientError
 
+from google.genai.errors import ClientError
+import time
+
+def _call_gemini(prompt: str) -> str:
+    last_error = None
+
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=prompt
+            )
+
+            if response and response.text:
+                return response.text
+
+            raise ValueError("Gemini returned an empty response.")
+
+        except ClientError as e:
+            last_error = e
+
+            error_text = str(e)
+
+            print("\n===== GEMINI ERROR =====")
+            print(error_text)
+            print("========================\n")
+
+            if "RESOURCE_EXHAUSTED" in error_text or "429" in error_text:
+                raise ValueError(
+                    "Gemini quota exceeded. Please wait for quota reset or use a different API key."
+                )
+
+            if attempt < 2:
+                time.sleep(5)
+                continue
+
+        except Exception as e:
+            last_error = e
+
+            if attempt < 2:
+                time.sleep(5)
+                continue
+
+    raise ValueError(f"Gemini failed after 3 attempts: {last_error}")
 
 def _extract_json(raw: str) -> dict:
     """
@@ -190,3 +228,4 @@ def generate_ai_feedback(resume_text: str) -> dict:
             raise ValueError(f"Gemini response missing required key: '{key}'")
 
     return result
+
