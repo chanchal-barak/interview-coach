@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from models.user import User
 from services.auth_service import decode_access_token
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
 
@@ -48,3 +47,24 @@ def get_current_user(
         raise credentials_error
 
     return user
+
+
+def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """
+    Like get_current_user, but returns None instead of raising when no
+    valid token is present. Use on routes that must keep working for
+    anonymous users but should persist results when a user IS logged in
+    (e.g. /upload-resume, /match-job).
+    """
+    if token is None:
+        return None
+
+    try:
+        user_id = decode_access_token(token)
+    except jwt.PyJWTError:
+        return None
+
+    return db.query(User).filter(User.id == user_id).first()
