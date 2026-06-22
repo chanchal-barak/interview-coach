@@ -25,19 +25,20 @@ import type {
 import type {
   ScoreTrendResponse,
   DashboardSummaryResponse,
-} from "../types/analytics.ts";
+} from "../types/analytics";
 import type {
   ResumeVersionSummary,
   ResumeVersionListResponse,
   ResumeVersionDetail,
   CompareResumeVersionsRequest,
   CompareResumeVersionsResponse,
-} from "../types/resumeVersion.ts";
+} from "../types/resumeVersion";
 import type {
   GenerateRoadmapResponse,
   RoadmapHistoryResponse,
 } from "../types/career";
 import type { ResumeRewriterResponse } from "../types/resumeRewriter";
+import type { RecruiterReviewResponse } from "../types/recruiter";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
 
@@ -45,7 +46,6 @@ const http = axios.create({
   baseURL: BASE_URL,
   timeout: 60_000, 
 });
-
 
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
@@ -169,7 +169,6 @@ export async function getCurrentUser(): Promise<User> {
   }
 }
 
-// ─── NEW: History API calls ────────────────────────────────────────
 
 export async function getHistory(): Promise<HistoryListResponse> {
   try {
@@ -179,6 +178,7 @@ export async function getHistory(): Promise<HistoryListResponse> {
     throw new Error(extractErrorMessage(err));
   }
 }
+
 export async function startInterview(
   payload: StartInterviewRequest
 ): Promise<StartInterviewResponse> {
@@ -356,6 +356,19 @@ export async function rewriteResume(file: File): Promise<ResumeRewriterResponse>
   try {
     const { data } = await http.post<ResumeRewriterResponse>(
       "/resume-rewriter",
+      singleFileForm(file)
+    );
+    return data;
+  } catch (err) {
+    throw new Error(extractErrorMessage(err));
+  }
+}
+
+
+export async function getRecruiterReview(file: File): Promise<RecruiterReviewResponse> {
+  try {
+    const { data } = await http.post<RecruiterReviewResponse>(
+      "/recruiter-review",
       singleFileForm(file)
     );
     return data;

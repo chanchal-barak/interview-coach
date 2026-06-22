@@ -1,22 +1,52 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   function handleLogout() {
     logout();
     navigate("/");
   }
 
+  function handleBack() {
+    navigate(-1);
+  }
+
+  const showBackButton = location.pathname !== "/";
+
   return (
     <nav className="navbar">
       <div className="navbar__inner">
-        <NavLink to="/" className="navbar__logo">
-          <div className="navbar__logo-icon">🎯</div>
-          InterviewCoach
-        </NavLink>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <NavLink to="/" className="navbar__logo">
+            <div className="navbar__logo-icon">🎯</div>
+            InterviewCoach
+          </NavLink>
+
+          {showBackButton && (
+            <button
+              onClick={handleBack}
+              className="btn btn--secondary btn--sm"
+              title="Go Back"
+              style={{
+                padding: "8px 12px",
+                borderRadius: "10px",
+                fontWeight: 600,
+              }}
+            >
+              ⬅
+            </button>
+          )}
+        </div>
 
         <div className="navbar__nav">
           <NavLink
@@ -27,6 +57,7 @@ export default function Navbar() {
           >
             Analyze Resume
           </NavLink>
+
           <NavLink
             to="/feedback"
             className={({ isActive }) =>
@@ -35,6 +66,7 @@ export default function Navbar() {
           >
             AI Feedback
           </NavLink>
+
           <NavLink
             to="/job-match"
             className={({ isActive }) =>
@@ -43,6 +75,7 @@ export default function Navbar() {
           >
             Job Match
           </NavLink>
+
           <NavLink
             to="/resume-rewriter"
             className={({ isActive }) =>
@@ -51,6 +84,7 @@ export default function Navbar() {
           >
             Rewriter
           </NavLink>
+
           <NavLink
             to="/interview"
             className={({ isActive }) =>
@@ -70,6 +104,7 @@ export default function Navbar() {
               >
                 Dashboard
               </NavLink>
+
               <NavLink
                 to="/analytics"
                 className={({ isActive }) =>
@@ -78,6 +113,7 @@ export default function Navbar() {
               >
                 Analytics
               </NavLink>
+
               <NavLink
                 to="/resume-versions"
                 className={({ isActive }) =>
@@ -86,6 +122,7 @@ export default function Navbar() {
               >
                 Versions
               </NavLink>
+
               <NavLink
                 to="/roadmap"
                 className={({ isActive }) =>
@@ -94,16 +131,22 @@ export default function Navbar() {
               >
                 Roadmap
               </NavLink>
+
               <button
                 className="btn btn--secondary btn--sm"
                 style={{ marginLeft: 8 }}
                 onClick={handleLogout}
               >
-                Log Out{user ? ` (${user.full_name.split(" ")[0]})` : ""}
+                Log Out
+                {user ? ` (${user.full_name.split(" ")[0]})` : ""}
               </button>
             </>
           ) : (
-            <NavLink to="/login" className="btn btn--primary btn--sm" style={{ marginLeft: 8 }}>
+            <NavLink
+              to="/login"
+              className="btn btn--primary btn--sm"
+              style={{ marginLeft: 8 }}
+            >
               Log In
             </NavLink>
           )}

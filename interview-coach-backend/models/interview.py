@@ -24,6 +24,9 @@ class InterviewSession(Base):
 
     role = Column(String(255), nullable=False)
     difficulty = Column(String(20), nullable=False)  # "easy" | "medium" | "hard"
+    mode = Column(String(30), default="general", nullable=False)  # general | resume_based | job_description_based
+    resume_text = Column(Text, nullable=True)              # set when mode != general and resume provided
+    job_description_text = Column(Text, nullable=True)     # set when mode == job_description_based
     status = Column(String(20), default="active", nullable=False)  # active | completed
 
     overall_score = Column(Float, nullable=True)        # 0-100, set on completion
@@ -60,7 +63,7 @@ class InterviewQuestion(Base):
 
     order_index = Column(Integer, nullable=False)
     question = Column(Text, nullable=False)
-    question_type = Column(String(20), default="behavioral", nullable=False)  # behavioral | technical
+    question_type = Column(String(20), default="behavioral", nullable=False)  # behavioral | technical | project_based | system_design
 
     answer = Column(Text, nullable=True)
     score = Column(Float, nullable=True)       # 0-10, set after evaluation

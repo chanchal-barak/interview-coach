@@ -4,13 +4,17 @@ from pydantic import BaseModel, Field
 
 
 Difficulty = Literal["easy", "medium", "hard"]
-QuestionType = Literal["behavioral", "technical"]
+QuestionType = Literal["behavioral", "technical", "project_based", "system_design"]
+InterviewMode = Literal["general", "resume_based", "job_description_based"]
 
 
 
 class StartInterviewRequest(BaseModel):
     role: str = Field(..., min_length=2, max_length=255, examples=["Backend Engineer Intern"])
     difficulty: Difficulty = "medium"
+    mode: InterviewMode = "general"
+    resume_text: str | None = Field(None, max_length=20000)
+    job_description_text: str | None = Field(None, max_length=10000)
 
 
 class SubmitAnswerRequest(BaseModel):
@@ -37,6 +41,7 @@ class StartInterviewResponse(BaseModel):
     session_id: str
     role: str
     difficulty: Difficulty
+    mode: InterviewMode
     question: QuestionOut
 
 
@@ -81,6 +86,7 @@ class InterviewSessionSummary(BaseModel):
     id: str
     role: str
     difficulty: Difficulty
+    mode: InterviewMode
     status: str
     overall_score: float | None
     technical_score: float | None
@@ -102,6 +108,7 @@ class InterviewSessionDetail(BaseModel):
     id: str
     role: str
     difficulty: Difficulty
+    mode: InterviewMode
     status: str
     overall_score: float | None
     technical_score: float | None

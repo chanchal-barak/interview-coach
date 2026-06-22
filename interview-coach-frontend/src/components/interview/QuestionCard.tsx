@@ -1,4 +1,4 @@
-import type { QuestionOut } from "../../types/interview";
+import type { QuestionOut, QuestionType } from "../../types/interview";
 
 interface QuestionCardProps {
   question: QuestionOut;
@@ -6,6 +6,13 @@ interface QuestionCardProps {
   maxQuestions: number;
   elapsedSeconds: number;
 }
+
+const TYPE_CONFIG: Record<QuestionType, { label: string; badgeClass: string }> = {
+  behavioral: { label: "Behavioral", badgeClass: "badge--green" },
+  technical: { label: "Technical", badgeClass: "badge--amber" },
+  project_based: { label: "Project-Based", badgeClass: "badge--blue" },
+  system_design: { label: "System Design", badgeClass: "badge--red" },
+};
 
 function formatTime(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -41,13 +48,10 @@ export default function QuestionCard({
 
       <div>
         <span
-          className={
-            "badge " +
-            (question.question_type === "technical" ? "badge--amber" : "badge--green")
-          }
+          className={"badge " + TYPE_CONFIG[question.question_type].badgeClass}
           style={{ marginBottom: 10 }}
         >
-          {question.question_type === "technical" ? "Technical" : "Behavioral"}
+          {TYPE_CONFIG[question.question_type].label}
         </span>
         <p
           style={{

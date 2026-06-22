@@ -6,12 +6,21 @@ import {
 } from "../services/api";
 import type {
   Difficulty,
+  InterviewMode,
   QuestionOut,
   AnswerEvaluation,
   EndInterviewResponse,
 } from "../types/interview";
 
 type Phase = "idle" | "active" | "evaluating" | "complete";
+
+interface StartInterviewParams {
+  role: string;
+  difficulty: Difficulty;
+  mode: InterviewMode;
+  resumeText?: string;
+  jobDescriptionText?: string;
+}
 
 interface UseInterviewResult {
   phase: Phase;
@@ -24,7 +33,7 @@ interface UseInterviewResult {
   elapsedSeconds: number;
   loading: boolean;
   error: string | null;
-  start: (role: string, difficulty: Difficulty) => Promise<void>;
+  start: (params: StartInterviewParams) => Promise<void>;
   submitAnswer: (answer: string) => Promise<void>;
   finish: () => Promise<void>;
   reset: () => void;
@@ -58,11 +67,17 @@ export function useInterview(): UseInterviewResult {
     };
   }, [phase]);
 
-  const start = useCallback(async (role: string, difficulty: Difficulty) => {
+  const start = useCallback(async (params: StartInterviewParams) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await startInterview({ role, difficulty });
+      const data = await startInterview({
+        role: params.role,
+        difficulty: params.difficulty,
+        mode: params.mode,
+        resume_text: params.resumeText ?? null,
+        job_description_text: params.jobDescriptionText ?? null,
+      });
       setSessionId(data.session_id);
       setCurrentQuestion(data.question);
       setQuestionsAsked(0);

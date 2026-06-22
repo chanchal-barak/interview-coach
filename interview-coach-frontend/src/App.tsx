@@ -5,6 +5,7 @@ import AnalyzePage from "./pages/AnalyzePage";
 import FeedbackPage from "./pages/FeedbackPage";
 import JobMatchPage from "./pages/JobMatchPage";
 import ResumeRewriterPage from "./pages/ResumeRewriterPage";
+import RecruiterReviewPage from "./pages/RecruiterReviewPage";
 import InterviewPage from "./pages/InterviewPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -26,6 +27,7 @@ function App() {
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/job-match" element={<JobMatchPage />} />
           <Route path="/resume-rewriter" element={<ResumeRewriterPage />} />
+          <Route path="/recruiter-review" element={<RecruiterReviewPage />} />
 
           <Route
             path="/interview"

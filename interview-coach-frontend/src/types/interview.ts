@@ -1,9 +1,13 @@
 export type Difficulty = "easy" | "medium" | "hard";
-export type QuestionType = "behavioral" | "technical";
+export type QuestionType = "behavioral" | "technical" | "project_based" | "system_design";
+export type InterviewMode = "general" | "resume_based" | "job_description_based";
 
 export interface StartInterviewRequest {
   role: string;
   difficulty: Difficulty;
+  mode: InterviewMode;
+  resume_text?: string | null;
+  job_description_text?: string | null;
 }
 
 export interface QuestionOut {
@@ -17,6 +21,7 @@ export interface StartInterviewResponse {
   session_id: string;
   role: string;
   difficulty: Difficulty;
+  mode: InterviewMode;
   question: QuestionOut;
 }
 
@@ -64,6 +69,7 @@ export interface InterviewSessionSummary {
   id: string;
   role: string;
   difficulty: Difficulty;
+  mode: InterviewMode;
   status: "active" | "completed";
   overall_score: number | null;
   technical_score: number | null;
@@ -82,6 +88,7 @@ export interface InterviewSessionDetail {
   id: string;
   role: string;
   difficulty: Difficulty;
+  mode: InterviewMode;
   status: "active" | "completed";
   overall_score: number | null;
   technical_score: number | null;

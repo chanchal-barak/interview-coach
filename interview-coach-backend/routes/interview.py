@@ -41,8 +41,27 @@ def start(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if payload.mode == "resume_based" and not payload.resume_text:
+        raise HTTPException(
+            status_code=400,
+            detail="resume_text is required when mode is 'resume_based'.",
+        )
+    if payload.mode == "job_description_based" and not payload.job_description_text:
+        raise HTTPException(
+            status_code=400,
+            detail="job_description_text is required when mode is 'job_description_based'.",
+        )
+
     try:
-        session, question = start_interview(db, current_user.id, payload.role, payload.difficulty)
+        session, question = start_interview(
+            db,
+            current_user.id,
+            payload.role,
+            payload.difficulty,
+            mode=payload.mode,
+            resume_text=payload.resume_text,
+            job_description_text=payload.job_description_text,
+        )
     except ValueError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -50,6 +69,7 @@ def start(
         session_id=session.id,
         role=session.role,
         difficulty=session.difficulty,
+        mode=session.mode,
         question=QuestionOut.model_validate(question),
     )
 
@@ -152,6 +172,7 @@ def history(
             id=s.id,
             role=s.role,
             difficulty=s.difficulty,
+            mode=s.mode,
             status=s.status,
             overall_score=s.overall_score,
             technical_score=s.technical_score,
@@ -179,6 +200,7 @@ def history_detail(
         id=session.id,
         role=session.role,
         difficulty=session.difficulty,
+        mode=session.mode,
         status=session.status,
         overall_score=session.overall_score,
         technical_score=session.technical_score,

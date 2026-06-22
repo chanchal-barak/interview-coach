@@ -24,6 +24,7 @@ from routes import analytics as analytics_routes
 from routes import resume_version as resume_version_routes
 from routes import career as career_routes
 from routes import resume_rewriter as resume_rewriter_routes
+from routes import recruiter as recruiter_routes
 from middleware.auth_middleware import get_current_user_optional
 from services.history_service import save_analysis
 
@@ -50,6 +51,7 @@ app.include_router(analytics_routes.router)
 app.include_router(resume_version_routes.router)
 app.include_router(career_routes.router)
 app.include_router(resume_rewriter_routes.router)
+app.include_router(recruiter_routes.router)
 
 
 @app.get("/")

@@ -5,39 +5,10 @@ from datetime import datetime, timezone
 
 from models.interview import InterviewSession, InterviewQuestion
 from services.gemini_service import _call_gemini, _extract_json  # reuse existing low-level helpers
+from services.question_generation_service import generate_first_question, generate_next_question
 
 MAX_QUESTIONS = 5
 
-
-_FIRST_QUESTION_PROMPT = """You are an experienced technical interviewer conducting a mock interview for a {role} position at {difficulty} difficulty.
-
-Generate the FIRST interview question. Mix of behavioral and technical is fine, but the very first question should be a warm, approachable behavioral or background question.
-
-Respond with ONLY a valid JSON object, no markdown, no code fences:
-{{
-  "question": "<the question text>",
-  "question_type": "behavioral" or "technical"
-}}
-"""
-
-_NEXT_QUESTION_PROMPT = """You are an experienced technical interviewer conducting a mock interview for a {role} position at {difficulty} difficulty.
-
-This is question {question_number} of {max_questions}.
-
-Here is the transcript so far:
-{transcript}
-
-Generate the NEXT question. It should:
-- Adapt to the candidate's previous answers (probe deeper on a weak area, or move to a new topic if they answered well)
-- Get progressively more challenging as the interview proceeds
-- Mix behavioral and technical questions appropriately for a {difficulty} {role} interview
-
-Respond with ONLY a valid JSON object, no markdown, no code fences:
-{{
-  "question": "<the question text>",
-  "question_type": "behavioral" or "technical"
-}}
-"""
 
 _EVALUATE_ANSWER_PROMPT = """You are an experienced technical interviewer evaluating a candidate's answer during a mock interview for a {role} position at {difficulty} difficulty.
 
@@ -96,45 +67,35 @@ def _build_transcript(questions: list[InterviewQuestion]) -> str:
     return "\n".join(lines) if lines else "(no questions yet)"
 
 
-def _generate_question(role: str, difficulty: str, prior_questions: list[InterviewQuestion]) -> dict:
-    """Calls Gemini to produce the next question. Returns {"question": ..., "question_type": ...}."""
-    if not prior_questions:
-        prompt = _FIRST_QUESTION_PROMPT.format(role=role, difficulty=difficulty)
-    else:
-        prompt = _NEXT_QUESTION_PROMPT.format(
-            role=role,
-            difficulty=difficulty,
-            question_number=len(prior_questions) + 1,
-            max_questions=MAX_QUESTIONS,
-            transcript=_build_transcript(prior_questions),
-        )
-
-    raw = _call_gemini(prompt)
-    result = _extract_json(raw)
-
-    if "question" not in result or "question_type" not in result:
-        raise ValueError("Gemini question response missing required keys.")
-
-    if result["question_type"] not in ("behavioral", "technical"):
-        result["question_type"] = "behavioral"
-
-    return result
-
-
-def start_interview(db: Session, user_id: str, role: str, difficulty: str) -> tuple[InterviewSession, InterviewQuestion]:
+def start_interview(
+    db: Session,
+    user_id: str,
+    role: str,
+    difficulty: str,
+    mode: str = "general",
+    resume_text: str | None = None,
+    job_description_text: str | None = None,
+) -> tuple[InterviewSession, InterviewQuestion]:
     """
     Creates a new interview session and generates the first question.
+    mode determines how questions are generated:
+      - "general": role + difficulty only
+      - "resume_based": grounded in the candidate's actual resume
+      - "job_description_based": grounded in a real JD + resume/JD skill-match gap
     """
     session = InterviewSession(
         user_id=user_id,
         role=role,
         difficulty=difficulty,
+        mode=mode,
+        resume_text=resume_text,
+        job_description_text=job_description_text,
         status="active",
     )
     db.add(session)
     db.flush()  # get session.id without committing yet
 
-    q_data = _generate_question(role, difficulty, [])
+    q_data = generate_first_question(mode, role, difficulty, resume_text, job_description_text)
 
     question = InterviewQuestion(
         session_id=session.id,
@@ -190,7 +151,16 @@ def submit_answer(
     if len(all_questions) >= MAX_QUESTIONS:
         return evaluation, None, True
 
-    next_q_data = _generate_question(session.role, session.difficulty, all_questions)
+    next_q_data = generate_next_question(
+        mode=session.mode,
+        role=session.role,
+        difficulty=session.difficulty,
+        resume_text=session.resume_text,
+        job_description_text=session.job_description_text,
+        question_number=len(all_questions) + 1,
+        max_questions=MAX_QUESTIONS,
+        transcript=_build_transcript(all_questions),
+    )
 
     next_question = InterviewQuestion(
         session_id=session.id,

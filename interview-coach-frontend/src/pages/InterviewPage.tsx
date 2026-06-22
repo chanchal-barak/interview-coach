@@ -4,13 +4,44 @@ import QuestionCard from "../components/interview/QuestionCard";
 import AnswerInput from "../components/interview/AnswerInput";
 import FeedbackPanel from "../components/interview/FeedbackPanel";
 import InterviewSummary from "../components/interview/InterviewSummary";
-import type { Difficulty } from "../types/interview";
+import type { Difficulty, InterviewMode } from "../types/interview";
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: "easy", label: "Easy" },
   { value: "medium", label: "Medium" },
   { value: "hard", label: "Hard" },
 ];
+
+const MODES: { value: InterviewMode; label: string; description: string }[] = [
+  {
+    value: "general",
+    label: "General Interview",
+    description: "Standard role + difficulty questions, no extra material needed.",
+  },
+  {
+    value: "resume_based",
+    label: "Resume Based Interview",
+    description: "Questions grounded in the real projects and skills on your resume.",
+  },
+  {
+    value: "job_description_based",
+    label: "Job Description Based Interview",
+    description: "Questions targeting the specific gaps between your resume and a real job posting.",
+  },
+];
+
+const textareaStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "14px",
+  borderRadius: "10px",
+  border: "1px solid var(--border)",
+  background: "var(--bg-elevated)",
+  color: "var(--text-primary)",
+  fontSize: "0.88rem",
+  fontFamily: "var(--font-body)",
+  resize: "vertical",
+  lineHeight: 1.6,
+};
 
 export default function InterviewPage() {
   const {
@@ -30,11 +61,28 @@ export default function InterviewPage() {
 
   const [role, setRole] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  const [mode, setMode] = useState<InterviewMode>("general");
+  const [resumeText, setResumeText] = useState("");
+  const [jobDescriptionText, setJobDescriptionText] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
 
+  const needsResume = mode === "resume_based" || mode === "job_description_based";
+  const needsJobDescription = mode === "job_description_based";
+
+  const canStart =
+    role.trim().length > 0 &&
+    (!needsResume || resumeText.trim().length > 0) &&
+    (!needsJobDescription || jobDescriptionText.trim().length > 0);
+
   async function handleStart() {
-    if (!role.trim()) return;
-    await start(role.trim(), difficulty);
+    if (!canStart) return;
+    await start({
+      role: role.trim(),
+      difficulty,
+      mode,
+      resumeText: needsResume ? resumeText.trim() : undefined,
+      jobDescriptionText: needsJobDescription ? jobDescriptionText.trim() : undefined,
+    });
   }
 
   async function handleAnswerSubmit(answer: string) {
@@ -61,6 +109,41 @@ export default function InterviewPage() {
 
         <div className="card stack stack--md">
           <div className="stack stack--sm">
+            <label className="section-label">Interview Type</label>
+            <div className="stack stack--sm">
+              {MODES.map((m) => (
+                <label
+                  key={m.value}
+                  className={"card" + (mode === m.value ? " card--accent" : "")}
+                  style={{ padding: 14, cursor: "pointer", display: "block" }}
+                  onClick={() => setMode(m.value)}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <input
+                      type="radio"
+                      name="interview-mode"
+                      checked={mode === m.value}
+                      onChange={() => setMode(m.value)}
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                    <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{m.label}</span>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "0.8rem",
+                      color: "var(--text-secondary)",
+                      marginTop: 6,
+                      marginLeft: 24,
+                    }}
+                  >
+                    {m.description}
+                  </p>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="stack stack--sm">
             <label className="section-label" htmlFor="role">
               Target Role
             </label>
@@ -81,6 +164,38 @@ export default function InterviewPage() {
               }}
             />
           </div>
+
+          {needsResume && (
+            <div className="stack stack--sm">
+              <label className="section-label" htmlFor="resume-text">
+                Paste Your Resume Text
+              </label>
+              <textarea
+                id="resume-text"
+                value={resumeText}
+                onChange={(e) => setResumeText(e.target.value)}
+                placeholder="Paste the full text of your resume here..."
+                rows={6}
+                style={textareaStyle}
+              />
+            </div>
+          )}
+
+          {needsJobDescription && (
+            <div className="stack stack--sm">
+              <label className="section-label" htmlFor="jd-text">
+                Paste the Job Description
+              </label>
+              <textarea
+                id="jd-text"
+                value={jobDescriptionText}
+                onChange={(e) => setJobDescriptionText(e.target.value)}
+                placeholder="Paste the full job description text here..."
+                rows={6}
+                style={textareaStyle}
+              />
+            </div>
+          )}
 
           <div className="stack stack--sm">
             <label className="section-label">Difficulty</label>
@@ -106,7 +221,7 @@ export default function InterviewPage() {
 
           <button
             className="btn btn--primary btn--full btn--lg"
-            disabled={!role.trim() || loading}
+            disabled={!canStart || loading}
             onClick={handleStart}
           >
             {loading ? (

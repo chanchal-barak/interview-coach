@@ -4,8 +4,8 @@ import { useAuth } from "../hooks/useAuth";
 import { getHistory, getInterviewHistory, getDashboardSummary, listResumeVersions } from "../services/api";
 import type { HistoryItem } from "../types/auth";
 import type { InterviewSessionSummary } from "../types/interview";
-import type { DashboardSummaryResponse } from "../types/analytics.ts";
-import type { ResumeVersionSummary } from "../types/resumeVersion.ts";
+import type { DashboardSummaryResponse } from "../types/analytics";
+import type { ResumeVersionSummary } from "../types/resumeVersion";
 import InterviewHistoryCard from "../components/interview/InterviewHistoryCard";
 import { useCareerRoadmap } from "../hooks/useCareerRoadmap";
 
@@ -215,6 +215,25 @@ export default function DashboardPage() {
           </div>
           <Link to="/resume-rewriter" className="btn btn--primary btn--sm">
             Rewrite Resume
+          </Link>
+        </div>
+      </div>
+
+      {/* Recruiter review */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div
+          className="card__header"
+          style={{ justifyContent: "space-between", display: "flex", alignItems: "center" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="card__icon card__icon--amber">🕴️</div>
+            <div>
+              <div className="card__title">AI Recruiter Mode</div>
+              <div className="card__subtitle">Get a real hire / no-hire call</div>
+            </div>
+          </div>
+          <Link to="/recruiter-review" className="btn btn--primary btn--sm">
+            Get Reviewed
           </Link>
         </div>
       </div>
