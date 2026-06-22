@@ -40,7 +40,7 @@ import type {
 import type { ResumeRewriterResponse } from "../types/resumeRewriter";
 import type { RecruiterReviewResponse } from "../types/recruiter";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "https://interview-coach-0hgx.onrender.com";
 
 const http = axios.create({
   baseURL: BASE_URL,
