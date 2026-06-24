@@ -1,54 +1,41 @@
 # 🚀 AI Interview Coach
 
-An AI-powered career preparation platform that helps students and job seekers improve their resumes, evaluate job fit, practice interviews, and receive personalized career guidance using Google Gemini AI.
+> An AI-powered career preparation platform that helps students and job seekers optimize resumes, evaluate job fit, practice AI-driven interviews, track progress, and receive personalized career guidance.
 
 ---
 
-## 📌 Overview
+## 🌟 Overview
 
-AI Interview Coach is a full-stack web application designed to assist candidates throughout the interview preparation journey.
+AI Interview Coach is a full-stack platform designed to streamline the entire interview preparation journey. It combines Resume Analysis, AI Feedback, Job Matching, Mock Interviews, Career Roadmaps, and Performance Analytics into a single intelligent system.
 
-The platform provides:
-
-* Resume Analysis
-* AI Resume Feedback
-* Job Match Scoring
-* AI Mock Interviews
-* Resume Version Tracking
-* Career Roadmaps
-* Analytics Dashboard
-
-The goal is to create a single platform where users can continuously improve their resumes and interview skills with AI-powered insights.
+The platform leverages **Google Gemini AI**, **FastAPI**, **React**, **Redis**, and **Celery** to deliver personalized career insights and scalable AI-powered workflows.
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
 ### 📄 Resume Analysis
 
 * Upload PDF resumes
 * ATS-style scoring
-* Skills extraction
 * Resume quality assessment
+* Skills extraction
+* Section-wise evaluation
 * Instant heuristic feedback
-
----
 
 ### 🤖 AI Resume Feedback
 
 Powered by Google Gemini AI.
 
-* Detailed resume review
-* Strength analysis
+* Resume strengths analysis
 * Weakness identification
 * Improvement suggestions
 * Actionable recommendations
-
----
+* Recruiter-style feedback
 
 ### 🎯 Job Match Analysis
 
-Compare a resume against a job description.
+Compare resumes against real job descriptions.
 
 Provides:
 
@@ -56,70 +43,111 @@ Provides:
 * Missing skills detection
 * Gap analysis
 * Hiring readiness insights
+* AI-generated recommendations
 
----
+### 🎤 AI Mock Interview Simulator
 
-### 🎤 AI Interview Simulator
+Practice realistic interviews powered by Gemini AI.
 
-Practice interviews using AI-generated questions.
-
-Supported Modes:
+#### Supported Modes
 
 * General Interview
 * Resume-Based Interview
 * Job Description-Based Interview
 
-Features:
+#### Features
 
 * Dynamic question generation
+* Context-aware follow-up questions
 * Answer evaluation
-* AI feedback
-* Scoring system
-* Final interview summary
-
----
+* AI-generated feedback
+* Interview scoring
+* Final performance summary
 
 ### 📈 Analytics Dashboard
 
-Track progress over time.
+Track improvement over time.
 
 Includes:
 
-* Resume growth
-* Interview performance
-* Job match trends
-* User activity overview
+* Resume score progression
+* Interview performance trends
+* Job match improvements
+* Activity analytics
+* Learning insights
 
----
+### 🗂 Resume Version Tracking
 
-### 🗂 Resume Versioning
-
-Track resume improvements.
+Manage and compare resume iterations.
 
 Features:
 
-* Save resume snapshots
-* Compare versions
-* Monitor progress
-* Track changes over time
+* Resume snapshots
+* Version comparison
+* Change tracking
+* Progress monitoring
 
----
+### 🛣 AI Career Roadmap Generator
 
-### 🛣 Career Roadmap Generator
-
-Generate personalized learning paths based on:
+Generate personalized learning plans based on:
 
 * Current skills
 * Career goals
-* Target roles
+* Target role
+* Experience level
+
+### ⚡ Redis Caching
+
+Improves performance by reducing repeated AI requests.
+
+* Faster response times
+* Reduced Gemini API usage
+* Improved scalability
+
+### 🔄 Asynchronous Task Processing
+
+Powered by Celery and Redis.
+
+* Background AI processing
+* Non-blocking user experience
+* Scalable architecture
+* Queue-based task execution
 
 ---
 
-## 🏗 Tech Stack
+## 🏗 System Architecture
+
+```text
+                     ┌───────────────────┐
+                     │ React Frontend    │
+                     └─────────┬─────────┘
+                               │
+                               ▼
+                     ┌───────────────────┐
+                     │ FastAPI Backend   │
+                     └─────────┬─────────┘
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        ▼                      ▼                      ▼
+
+ ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+ │ SQLite / DB │      │ Gemini AI    │      │ Redis Cache  │
+ └──────────────┘      └──────────────┘      └──────┬───────┘
+                                                    │
+                                                    ▼
+                                           ┌──────────────┐
+                                           │ Celery Worker│
+                                           └──────────────┘
+```
+
+---
+
+## 🛠 Tech Stack
 
 ### Frontend
 
 * React.js
+* TypeScript
 * Vite
 * React Router
 * CSS
@@ -131,11 +159,16 @@ Generate personalized learning paths based on:
 * JWT Authentication
 * SQLite
 
-### AI
+### AI & ML
 
 * Google Gemini AI
 * Prompt Engineering
 * Structured JSON Responses
+
+### Caching & Background Jobs
+
+* Redis
+* Celery
 
 ### Deployment
 
@@ -146,7 +179,7 @@ Generate personalized learning paths based on:
 
 ## 📂 Project Structure
 
-```bash
+```text
 AI-Interview-Coach/
 │
 ├── interview-coach-frontend/
@@ -154,7 +187,8 @@ AI-Interview-Coach/
 │   ├── pages/
 │   ├── components/
 │   ├── hooks/
-│   └── services/
+│   ├── services/
+│   └── styles/
 │
 ├── interview-coach-backend/
 │   ├── models/
@@ -162,6 +196,7 @@ AI-Interview-Coach/
 │   ├── schemas/
 │   ├── services/
 │   ├── middleware/
+│   ├── workers/
 │   ├── database/
 │   ├── main.py
 │   └── requirements.txt
@@ -171,14 +206,15 @@ AI-Interview-Coach/
 
 ---
 
-## 🔐 Authentication
+## 🔐 Authentication & Security
 
 Implemented using:
 
 * JWT Access Tokens
 * Password Hashing (bcrypt)
 * Protected Routes
-* User Sessions
+* Session Validation
+* Secure API Authorization
 
 ---
 
@@ -193,7 +229,7 @@ AI Feedback
       ↓
 Job Match Analysis
       ↓
-Interview Practice
+Mock Interview
       ↓
 Performance Analytics
       ↓
@@ -211,9 +247,7 @@ git clone https://github.com/chanchal-barak/interview-coach.git
 cd interview-coach
 ```
 
----
-
-## Backend Setup
+### Backend Setup
 
 ```bash
 cd interview-coach-backend
@@ -225,7 +259,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Create `.env`
+### Create .env
 
 ```env
 GEMINI_API_KEY=your_api_key
@@ -235,9 +269,11 @@ DATABASE_URL=sqlite:///./interview_coach.db
 JWT_SECRET_KEY=your_secret_key
 
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+REDIS_URL=redis://localhost:6379/0
 ```
 
-Run Backend
+### Run Backend
 
 ```bash
 uvicorn main:app --reload
@@ -255,9 +291,19 @@ Swagger Docs:
 http://localhost:8000/docs
 ```
 
----
+### Run Redis
 
-## Frontend Setup
+```bash
+docker run -d --name redis -p 6379:6379 redis
+```
+
+### Run Celery Worker
+
+```bash
+celery -A workers.tasks worker --pool=solo --loglevel=info
+```
+
+### Frontend Setup
 
 ```bash
 cd interview-coach-frontend
@@ -275,23 +321,19 @@ http://localhost:5173
 
 ---
 
-## 🌐 Deployment
-
-### Backend
-
-Deployed on Render
-
-```text
-https://your-render-backend-url.onrender.com
-```
+## 🌐 Live Deployment
 
 ### Frontend
 
-Deployed on Vercel
+https://interview-coach-eosin.vercel.app
 
-```text
-https://your-vercel-app.vercel.app
-```
+### Backend
+
+https://interview-coach-0hgx.onrender.com
+
+---
+
+## 📸 Screenshots
 
 ---
 
@@ -317,35 +359,39 @@ https://your-vercel-app.vercel.app
 
 ---
 
-## 🎯 Future Improvements
+## 🎯 Future Enhancements
 
-* PostgreSQL Integration
+* PostgreSQL Migration
 * AWS EC2 Deployment
 * AWS S3 Resume Storage
 * CloudWatch Monitoring
 * Email Notifications
-* Admin Dashboard
 * Multi-Language Support
 * Advanced ATS Scoring
+* Voice-Based Interviews
+* AI Interview Report PDFs
+* Real-Time Interview Analytics
 
 ---
 
 ## 👨‍💻 Author
 
-**Chanchal Barak**
+### Chanchal Barak
 
-B.Tech CSE (Data Science)
+B.Tech Computer Science & Engineering (Data Science)
+
 Bhagwan Parshuram Institute of Technology
+
 ---
 
-## ⭐ If you found this project useful
+## ⭐ Support
 
-Please consider giving it a star on GitHub.
+If you found this project useful:
 
-```bash
-⭐ Star this repository
-🍴 Fork this repository
+⭐ Star the repository
+
+🍴 Fork the repository
+
 🚀 Build something awesome
-```
 
----
+
