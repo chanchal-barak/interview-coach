@@ -1,12 +1,14 @@
+import hashlib
 import time
 import os
 import json
+from cache.redis_client import redis_client
 import re
 from google import genai
 from dotenv import load_dotenv
 
+
 load_dotenv()
-print("API KEY:", os.getenv("GEMINI_API_KEY"))
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -15,10 +17,25 @@ MODEL = "gemini-2.5-flash"
 
 from google.genai.errors import ClientError
 
-from google.genai.errors import ClientError
-import time
 
 def _call_gemini(prompt: str) -> str:
+
+    cache_key = (
+        "gemini:"
+        + hashlib.sha256(
+            prompt.encode("utf-8")
+        ).hexdigest()
+    )
+
+    # Check Redis cache first
+    try:
+        cached = redis_client.get(cache_key)
+        if cached:
+            print("✅ Cache hit")
+            return cached
+    except Exception as e:
+        print(f"Redis GET failed: {e}")
+
     last_error = None
 
     for attempt in range(3):
@@ -29,6 +46,16 @@ def _call_gemini(prompt: str) -> str:
             )
 
             if response and response.text:
+
+                try:
+                    redis_client.setex(
+                        cache_key,
+                        86400,  # 24 hours
+                        response.text
+                    )
+                except Exception as e:
+                    print(f"Redis SET failed: {e}")
+
                 return response.text
 
             raise ValueError("Gemini returned an empty response.")
@@ -42,23 +69,35 @@ def _call_gemini(prompt: str) -> str:
             print(error_text)
             print("========================\n")
 
-            if "RESOURCE_EXHAUSTED" in error_text or "429" in error_text:
+            # Quota exhausted
+            if (
+                "RESOURCE_EXHAUSTED" in error_text
+                or "429" in error_text
+            ):
                 raise ValueError(
                     "Gemini quota exceeded. Please wait for quota reset or use a different API key."
                 )
 
             if attempt < 2:
-                time.sleep(5)
+                wait_time = 2 ** attempt
+                print(f"Retrying in {wait_time}s...")
+                time.sleep(wait_time)
                 continue
 
         except Exception as e:
             last_error = e
 
+            print(f"Unexpected Gemini error: {e}")
+
             if attempt < 2:
-                time.sleep(5)
+                wait_time = 2 ** attempt
+                print(f"Retrying in {wait_time}s...")
+                time.sleep(wait_time)
                 continue
 
-    raise ValueError(f"Gemini failed after 3 attempts: {last_error}")
+    raise ValueError(
+        f"Gemini failed after 3 attempts: {last_error}"
+    )
 
 def _extract_json(raw: str) -> dict:
     """

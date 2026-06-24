@@ -1,6 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from fastapi.concurrency import run_in_threadpool
+
+from celery.result import AsyncResult
+from workers.celery_app import celery
 
 from services.pdf_extractor import extract_text_from_upload
 from services.resume_analyzer import analyze_resume_text
@@ -27,6 +31,11 @@ from routes import resume_rewriter as resume_rewriter_routes
 from routes import recruiter as recruiter_routes
 from middleware.auth_middleware import get_current_user_optional
 from services.history_service import save_analysis
+from workers.tasks import (
+    resume_analysis_task,
+    detailed_feedback_task,
+    job_match_task,
+)
 
 app = FastAPI(
     title="AI Interview Coach API",
@@ -86,10 +95,19 @@ async def generate_feedback(
 ):
     try:
         text = await extract_text_from_upload(file)
-        result = analyze_resume_with_ai(text)
 
-        if current_user is not None:
-            save_analysis(db, current_user.id, "ai_feedback", result)
+        result = await run_in_threadpool(
+            analyze_resume_with_ai,
+            text
+        )
+
+        if current_user:
+            save_analysis(
+                db,
+                current_user.id,
+                "ai_feedback",
+                result
+            )
 
         return result
 
@@ -108,14 +126,27 @@ async def detailed_feedback(
 ):
     try:
         text = await extract_text_from_upload(file)
-        result = generate_ai_feedback(text)
 
-        if current_user is not None:
-            save_analysis(db, current_user.id, "detailed_feedback", result)
+        result = await run_in_threadpool(
+            generate_ai_feedback,
+            text
+        )
+
+        if current_user:
+            save_analysis(
+                db,
+                current_user.id,
+                "detailed_feedback",
+                result
+            )
 
         return result
+
     except ValueError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(
+            status_code=502,
+            detail=str(e)
+        )
 
 
 @app.post("/match-job")
@@ -128,7 +159,11 @@ async def match_job(
     resume_text = await extract_text_from_upload(resume)
     jd_text = await extract_text_from_upload(job_description)
 
-    result = match_resume_job(resume_text, jd_text)
+    result = await run_in_threadpool(
+    match_resume_job,
+    resume_text,
+    jd_text
+)
 
     if current_user is not None:
         save_analysis(db, current_user.id, "job_match", result)
@@ -143,35 +178,70 @@ async def match_job_ai(
     current_user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
-
     try:
         resume_text = await extract_text_from_upload(resume)
         jd_text = await extract_text_from_upload(job_description)
-        result = analyze_job_match_with_ai(resume_text, jd_text)
 
-        if current_user is not None:
-            save_analysis(db, current_user.id, "ai_job_match", result)
-
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=502, detail=str(e))
-
-
-@app.get("/test-gemini")
-def test_gemini():
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents="Say hello"
+        result = await run_in_threadpool(
+            analyze_job_match_with_ai,
+            resume_text,
+            jd_text
         )
 
-        return {
-            "success": True,
-            "text": response.text
-        }
+        if current_user:
+            save_analysis(
+                db,
+                current_user.id,
+                "ai_job_match",
+                result
+            )
 
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return result
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=str(e)
+        )
+    
+@app.get("/tasks/{task_id}")
+def get_task_status(
+    task_id: str
+):
+    task = AsyncResult(
+        task_id,
+        app=celery
+    )
+
+    return {
+        "task_id": task.id,
+        "status": task.status,
+        "result":
+            task.result
+            if task.ready()
+            else None
+    }
+@app.post("/generate-feedback-async")
+async def generate_feedback_async(
+    file: UploadFile = File(...)
+):
+    text = await extract_text_from_upload(file)
+
+    task = resume_analysis_task.delay(
+        text
+    )
+
+    return {
+        "task_id": task.id,
+        "status": "queued"
+    }
+@app.get("/debug/users")
+def debug_users(db: Session = Depends(get_db)):
+    from models.user import User
+
+    users = db.query(User).all()
+
+    return {
+        "count": len(users),
+        "emails": [u.email for u in users]
+    }
